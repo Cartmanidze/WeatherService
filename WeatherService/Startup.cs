@@ -43,9 +43,14 @@ namespace WeatherService
         {
             if (env.IsDevelopment())
             {
+                app.UseExceptionHandler("/error-local-development");
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "WeatherService v1"));
+            }
+            else
+            {
+                app.UseExceptionHandler("/error");
             }
 
             app.UseHttpsRedirection();
