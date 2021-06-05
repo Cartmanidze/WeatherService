@@ -16,13 +16,11 @@ namespace WeatherService.Controllers
     {
         private readonly IWeatherMapClient _weatherMapClient;
 
-        private readonly ILogger<WeatherController> _logger;
 
         private readonly IMapper _mapper;
 
         public WeatherController(ILogger<WeatherController> logger, IWeatherMapClient weatherMapClient, IMapper mapper)
         {
-            _logger = logger;
             _weatherMapClient = weatherMapClient;
             _mapper = mapper;
         }
