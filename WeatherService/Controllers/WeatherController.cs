@@ -72,6 +72,7 @@ namespace WeatherService.Controllers
                     foreach (var item in dest)
                     {
                         item.CityName = cityName;
+                        item.Metric = metric;
                     }
                 }));
             return Ok(weatherWindResponse);
