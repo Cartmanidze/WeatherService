@@ -68,7 +68,7 @@ namespace WeatherService.Controllers
             var metricValue = GetMetricValue(metric);
             if (metricValue == null) return BadRequest("parameter metric is not correct");
             var wind = await _weatherMapClient.GetWeatherForFiveDaysAsync(cityName, metricValue.Value).ConfigureAwait(false);
-            var weatherWindResponse = _mapper.Map<IEnumerable<TemperatureWithDate>, IEnumerable<WeatherTemperatureWithDateResponse>>(wind,
+            var weatherWindResponse = _mapper.Map<IEnumerable<TemperatureWithDate>, List<WeatherTemperatureWithDateResponse>>(wind,
                 opts => opts.AfterMap((_, dest) =>
                 {
                     foreach (var item in dest)
