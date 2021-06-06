@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using WeatherMap.Client.Configuration;
 using WeatherMap.Client.Entities;
@@ -18,11 +17,11 @@ namespace WeatherMap.Client
 
         private readonly WeatherMapConfiguration _weatherMapConfiguration;
 
-        public WeatherMapClient(HttpClient client, IConfiguration configuration)
+        public WeatherMapClient(HttpClient client, IOptions<WeatherMapConfiguration> weatherOptions)
         {
-            if (configuration is null) throw new ArgumentNullException(nameof(configuration));
+            if (weatherOptions is null) throw new ArgumentNullException(nameof(weatherOptions));
             _client = client ?? throw new ArgumentNullException(nameof(client));
-            _weatherMapConfiguration = configuration.GetSection(nameof(WeatherMapConfiguration)).Get<WeatherMapConfiguration>();
+            _weatherMapConfiguration = weatherOptions.Value;
         }
 
         public async Task<IEnumerable<TemperatureWithDate>> GetWeatherForFiveDaysAsync(string cityName, Metric metric)
@@ -31,7 +30,7 @@ namespace WeatherMap.Client
             var metricValue = metric.GetMetricForRequest();
             var query = $"/data/2.5/forecast?q={cityName}&units={metricValue}&appid={_weatherMapConfiguration.Token}";
             var content = await GetContentAsync(query).ConfigureAwait(false);
-            var weatherForFiveDays = JsonConvert.DeserializeObject<List<TemperatureWithDate>>(content);
+            var weatherForFiveDays = JsonConvert.DeserializeObject<RootObjectForFiveDays>(content)?.TemperaturesWithDates;
             return weatherForFiveDays;
         }
 
@@ -40,7 +39,7 @@ namespace WeatherMap.Client
             if (string.IsNullOrEmpty(cityName)) throw new ArgumentNullException(nameof(cityName));
             var query = $"/data/2.5/weather?q={cityName}&appid={_weatherMapConfiguration.Token}";
             var content = await GetContentAsync(query).ConfigureAwait(false);
-            var wind = JsonConvert.DeserializeObject<Wind>(content);
+            var wind = JsonConvert.DeserializeObject<RootObject>(content)?.Wind;
             return wind;
         }
 
@@ -50,7 +49,7 @@ namespace WeatherMap.Client
             var metricValue = metric.GetMetricForRequest();
             var query = $"/data/2.5/weather?q={cityName}&units={metricValue}&appid={_weatherMapConfiguration.Token}";
             var content = await GetContentAsync(query).ConfigureAwait(false);
-            var temperature = JsonConvert.DeserializeObject<Temperature>(content);
+            var temperature = JsonConvert.DeserializeObject<RootObject>(content)?.Temperature;
             return temperature;
         }
 

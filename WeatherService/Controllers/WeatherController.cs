@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -7,6 +7,7 @@ using WeatherMap.Client;
 using WeatherMap.Client.Entities;
 using WeatherMap.Client.Enums;
 using WeatherService.Models;
+using WeatherService.Profiles;
 
 namespace WeatherService.Controllers
 {
@@ -16,10 +17,9 @@ namespace WeatherService.Controllers
     {
         private readonly IWeatherMapClient _weatherMapClient;
 
-
         private readonly IMapper _mapper;
 
-        public WeatherController(ILogger<WeatherController> logger, IWeatherMapClient weatherMapClient, IMapper mapper)
+        public WeatherController(IWeatherMapClient weatherMapClient, IMapper mapper)
         {
             _weatherMapClient = weatherMapClient;
             _mapper = mapper;
@@ -30,15 +30,14 @@ namespace WeatherService.Controllers
         {
             if (string.IsNullOrEmpty(cityName)) return BadRequest("parameter cityName is null or empty");
             if (string.IsNullOrEmpty(metric)) return BadRequest("parameter metric is null or empty");
-            var metricValue = GetMetricValue(metric);
-            if (metricValue == null) return BadRequest("parameter metric is not correct");
-            var temperature = await _weatherMapClient.GetWeatherAsync(cityName, metricValue.Value).ConfigureAwait(false);
+            if (!Enum.TryParse(metric, true, out Metric metricValue)) return BadRequest("parameter metric is not correct");
+            var temperature = await _weatherMapClient.GetWeatherAsync(cityName, metricValue).ConfigureAwait(false);
             var weatherTemperatureResponse = _mapper.Map<Temperature, WeatherTemperatureResponse>(temperature,
-                opts => opts.AfterMap((_, dest) =>
+                opts =>
                 {
-                    dest.CityName = cityName;
-                    dest.Metric = metric;
-                }));
+                    opts.Items.Add(WeatherProfileConst.CityNameKey, cityName);
+                    opts.Items.Add(WeatherProfileConst.MetricKey, metric);
+                });
             return Ok(weatherTemperatureResponse);
 
         }
@@ -49,12 +48,8 @@ namespace WeatherService.Controllers
             if (string.IsNullOrEmpty(cityName)) return BadRequest("parameter cityName is null or empty");
             var wind = await _weatherMapClient.GetWindDataAsync(cityName).ConfigureAwait(false);
             var weatherWindResponse = _mapper.Map<Wind, WeatherWindResponse>(wind,
-                opts => opts.AfterMap((_, dest) =>
-                {
-                    dest.CityName = cityName;
-                }));
+                opts  => opts.Items.Add(WeatherProfileConst.CityNameKey, cityName));
             return Ok(weatherWindResponse);
-
         }
 
 
@@ -63,30 +58,15 @@ namespace WeatherService.Controllers
         {
             if (string.IsNullOrEmpty(cityName)) return BadRequest("parameter cityName is null or empty");
             if (string.IsNullOrEmpty(metric)) return BadRequest("parameter metric is null or empty");
-            var metricValue = GetMetricValue(metric);
-            if (metricValue == null) return BadRequest("parameter metric is not correct");
-            var wind = await _weatherMapClient.GetWeatherForFiveDaysAsync(cityName, metricValue.Value).ConfigureAwait(false);
+            if (!Enum.TryParse(metric, true, out Metric metricValue)) return BadRequest("parameter metric is not correct");
+            var wind = await _weatherMapClient.GetWeatherForFiveDaysAsync(cityName, metricValue).ConfigureAwait(false);
             var weatherWindResponse = _mapper.Map<IEnumerable<TemperatureWithDate>, List<WeatherTemperatureWithDateResponse>>(wind,
-                opts => opts.AfterMap((_, dest) =>
+                opts =>
                 {
-                    foreach (var item in dest)
-                    {
-                        item.CityName = cityName;
-                        item.Metric = metric;
-                    }
-                }));
+                    opts.Items.Add(WeatherProfileConst.CityNameKey, cityName);
+                    opts.Items.Add(WeatherProfileConst.MetricKey, metric);
+                });
             return Ok(weatherWindResponse);
-
-        }
-
-        private static Metric? GetMetricValue(string metric)
-        {
-            return metric switch
-            {
-                "celsius" => Metric.Celsius,
-                "fahrenheit" => Metric.Fahrenheit,
-                _ => null
-            };
         }
     }
 }

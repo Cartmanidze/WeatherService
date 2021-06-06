@@ -2,12 +2,12 @@
 
 namespace WeatherMap.Client.Entities
 {
-    public class TemperatureWithDate
+    public class RootObject
     {
         [JsonProperty(PropertyName = "main")]
         public Temperature Temperature { get; set; }
 
-        [JsonProperty(PropertyName = "dt_txt")]
-        public string Date { get; set; }
+        [JsonProperty(PropertyName = "wind")]
+        public Wind Wind { get; set; }
     }
 }
